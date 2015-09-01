@@ -3,6 +3,7 @@
 var app = {
   roomNames: [],
   displayRoom:null,
+  friends:[],
 
   init: function () {
     $('.chatForm').submit(function(e){
@@ -11,57 +12,48 @@ var app = {
     });
 
     $('.rooms').on('change', function (e) {
-      console.log(e.target.selectedIndex);
+
       var room = e.target.selectedIndex;
       var roomVal = e.target[room].value;
-
-      if (this.displayRoom !== roomVal) {
-        this.displayRoom = roomVal;
+      if (app.displayRoom !== roomVal) {
+        app.displayRoom = roomVal;
       } 
       if (room === 0) {
-        this.displayRoom = null;
+        app.displayRoom = null;
       }
-      console.log('new room set at : ', this.displayRoom);
+      $('#chats').text('');
+      app.fetch();
     });
 
-    $.ajax({
-      url: 'https://api.parse.com/1/classes/chatterbox',
-      type: 'GET',
-      contentType: 'application/json',
-      success: function (data) {
-        // ref data.results
-        // array of chats
-        for(var i=0; i < data.results.length; i++) {
-          app.getRoomNames(data.results[i]);
-        }
-        app.displayRooms(app.roomNames);
-      },
-      error: function (data) {
-        console.error("major fail brah");
+    $('#chats').on('click', '.username', function(e){
+      var friend = e.target.textContent;
+      if(app.friends.indexOf(friend) === -1) {
+        app.friends.push(friend);
       }
-    });
+      console.log('friends', app.friends);
+    })
+
+    app.fetch();
   },
 
   getRoomNames:function(data) {
-    if(this.roomNames.indexOf(data.roomname) === -1) {
+    if(data && this.roomNames.indexOf(data.roomname) === -1) {
       this.roomNames.push(data.roomname);
+      this.displayRooms(data);
     }
   },
-
+  // displayRooms --> appends room names to dropdown
   displayRooms: function (array) {
-    this.roomNames = _.filter(array, function (item) {
-      return typeof item === 'string' && item.length < 20;
-    });
-    var allRooms = _.map(this.roomNames, function (room) {
-      return $('<option></option>').text(room);
-    });
+    // $('.rooms').text('');
+    var allRooms = $('<option></option>').text(array.roomname);
     $('.rooms').append(allRooms);
   },
   
   send: function (e) {
+    console.log('sending')
     var message = {
       username: window.location.search.replace('?username=', ''),
-      text: e.target[0].value,
+      text: e.target[1].value,
       roomname: "<script>alert('TEHEHE')</script>"
     };
     $.ajax({
@@ -78,16 +70,27 @@ var app = {
     });
   },
 
+  filterByRoom: function (chats) {
+    if(!app.displayRoom) {
+      return chats;
+    }
+    var filtered = chats.filter(function(ch) {
+      return app.displayRoom === ch.roomname;
+    });
+    return filtered;
+  },
+
   fetch: function () {
     $.ajax({
       url: 'https://api.parse.com/1/classes/chatterbox',
       type: 'GET',
       contentType: 'application/json',
       success: function (data) {
-        // ref data.results
-        // array of chats
-        app.printChat(data.results);
-        //console.dir(data);
+        var res = data.results;
+        for(var i=0; i < res.length; i++) {
+          app.getRoomNames(res[i]);
+          app.printChat(res[i]);
+        }      
       },
       error: function (data) {
         console.error("major fail brah");
@@ -96,28 +99,28 @@ var app = {
   },
 
   printChat: function (chatArr) {
-    for (var i = 0; i < chatArr.length; i++) {
-      var chat = chatArr[i];
+    //$('#chats').text('');
+    //var validChats = app.filterByRoom(chatArr);
+    if(app.displayRoom && chatArr.roomname !== app.displayRoom) {
+      return;
+    }
+    
+    if (chatArr.roomname && chatArr.text && chatArr.username) {
+      var chat = chatArr;
       var $chat = $('<div class="chat"></div>');
       var $userName = $('<p class="username"></p>');
       var $message = $('<p class="message"></p>');
+      var $room = $('<p></p>');
+      $room.append(document.createTextNode(chat.roomname));
       $userName.append(document.createTextNode(chat.username));
       $message.append(document.createTextNode(chat.text));
       $chat.append($userName);
       $chat.append($message);
-      if (!this.displayRoom) {
-        $("#chats").prepend($chat);
-      }
-      
-    }
+      $chat.append($room); 
+      $("#chats").prepend($chat);
+    }    
   }
 
 };
 
-setInterval(app.fetch, 5000);
-
-// var message = {
-//   username: 'shawndrost',
-//   text: 'trololo',
-//   roomname: '4chan'
-// };
+setInterval(app.fetch, 4000);
