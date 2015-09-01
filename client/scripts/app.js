@@ -4,6 +4,7 @@ var app = {
   roomNames: [],
   displayRoom:null,
   friends:[],
+  dropPress: false,
 
   init: function () {
     $('.chatForm').submit(function(e){
@@ -22,6 +23,7 @@ var app = {
         app.displayRoom = null;
       }
       $('#chats').text('');
+      app.dropPress = true;
       app.fetch();
     });
 
@@ -31,7 +33,7 @@ var app = {
         app.friends.push(friend);
       }
       console.log('friends', app.friends);
-    })
+    });
 
     app.fetch();
   },
@@ -104,7 +106,6 @@ var app = {
     if(app.displayRoom && chatArr.roomname !== app.displayRoom) {
       return;
     }
-    
     if (chatArr.roomname && chatArr.text && chatArr.username) {
       var chat = chatArr;
       var $chat = $('<div class="chat"></div>');
@@ -117,7 +118,13 @@ var app = {
       $chat.append($userName);
       $chat.append($message);
       $chat.append($room); 
-      $("#chats").prepend($chat);
+      if (!app.dropPress) {
+        $("#chats").prepend($chat);
+      } else {
+        app.dropPress = false;
+        $("#chats").hide().prepend($chat).fadeIn(600);
+      }
+      
     }    
   }
 
