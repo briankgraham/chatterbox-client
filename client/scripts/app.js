@@ -5,11 +5,15 @@ var app = {
   displayRoom:null,
   friends:[],
   dropPress: false,
-
+  server: 'https://api.parse.com/1/classes/chatterbox',
   init: function () {
     $('.chatForm').submit(function(e){
       e.preventDefault();
-      app.send(e);
+      app.send({
+        username:window.location.search.replace('?username=', ''),
+        text:e.target[1].value,
+        roomname:'room'
+      });
     });
 
     $('.rooms').on('change', function (e) {
@@ -52,11 +56,11 @@ var app = {
   },
   
   send: function (e) {
-    console.log('sending')
+    
     var message = {
-      username: window.location.search.replace('?username=', ''),
-      text: e.target[1].value,
-      roomname: "<script>alert('TEHEHE')</script>"
+      username: e.username,//window.location.search.replace('?username=', ''),
+      text: e.text,
+      roomname: e.roomname
     };
     $.ajax({
       url: 'https://api.parse.com/1/classes/chatterbox',
@@ -124,10 +128,7 @@ var app = {
         app.dropPress = false;
         $("#chats").hide().prepend($chat).fadeIn(600);
       }
-      
     }    
   }
-
 };
-
 setInterval(app.fetch, 4000);
